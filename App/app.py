@@ -52,7 +52,7 @@ def loadCSVFile (file, lst, sep=";"):
     dialect = csv.excel()
     dialect.delimiter=sep
     try:
-        with open(file, encoding="utf-8") as csvfile:
+        with open(file, encoding="utf-8-sig") as csvfile:
             spamreader = csv.DictReader(csvfile, dialect=dialect)
             for row in spamreader: 
                 lst.append(row)
@@ -72,6 +72,7 @@ def printMenu():
     print("2- Contar los elementos de la Lista")
     print("3- Contar elementos filtrados por palabra clave")
     print("4- Consultar elementos a partir de dos listas")
+    print("5- Consultar info peli")
     print("0- Salir")
 
 def countElementsFilteredByColumn(criteria, column, lst):
@@ -101,12 +102,34 @@ def countElementsFilteredByColumn(criteria, column, lst):
         print("Tiempo de ejecución ",t1_stop-t1_start," segundos")
     return counter
 
-def countElementsByCriteria(criteria, column, lst):
+def countElementsByCriteria(criteria, lst_1, lst_2):
     """
     Retorna la cantidad de elementos que cumplen con un criterio para una columna dada
     """
-    return 0
+    cont=0
+    suma=0
+    prom=0
+    pelis=[]
+    t1_start = process_time()
+    for row in lst_1:
+        if row['director_name']==criteria:
+            pelis.append(row['id'])
+    for element in lst_2:
+        if element['id'] in pelis and float(element['vote_average'])>=6:
+            suma+=float(element['vote_average'])
+            cont+=1
+    t1_stop = process_time() #tiempo final
+    print("Tiempo de ejecución ",t1_stop-t1_start," segundos")
+    if cont>1:
+        prom=round(suma/cont,2)
+    rta=(cont,prom)
+    return rta
 
+def buscarPeli(crit, lst):
+    for row in lst:
+        if row['id']==crit:
+            return row['original_title']
+    return 'No hay'
 
 def main():
     """
@@ -116,26 +139,42 @@ def main():
     Args: None
     Return: None 
     """
-    lista = [] #instanciar una lista vacia
+    details = [] #instanciar una lista vacia
+    casting = []
     while True:
         printMenu() #imprimir el menu de opciones en consola
         inputs =input('Seleccione una opción para continuar\n') #leer opción ingresada
         if len(inputs)>0:
             if int(inputs[0])==1: #opcion 1
-                loadCSVFile("Data/test.csv", lista) #llamar funcion cargar datos
-                print("Datos cargados, "+str(len(lista))+" elementos cargados")
+                lista=input("¿Esta cargando casting o details?")
+                archivo = 'Data/'+input('Nombre del archivo:')+'.csv'
+                if lista=='casting':
+                    loadCSVFile(archivo, casting) #llamar funcion cargar datos
+                    print("Datos cargados, "+str(len(casting))+" elementos cargados")
+                elif lista=='details':
+                    loadCSVFile(archivo, details)
+                    print("Datos cargados, "+str(len(details))+" elementos cargados")
             elif int(inputs[0])==2: #opcion 2
                 if len(lista)==0: #obtener la longitud de la lista
                     print("La lista esta vacía")    
                 else: print("La lista tiene "+str(len(lista))+" elementos")
             elif int(inputs[0])==3: #opcion 3
                 criteria =input('Ingrese el criterio de búsqueda\n')
-                counter=countElementsFilteredByColumn(criteria, "nombre", lista) #filtrar una columna por criterio  
+                column =input('Ingrese la columna\n')
+                counter=countElementsFilteredByColumn(criteria, column, lista) #filtrar una columna por criterio  
                 print("Coinciden ",counter," elementos con el crtierio: ", criteria  )
             elif int(inputs[0])==4: #opcion 4
                 criteria =input('Ingrese el criterio de búsqueda\n')
-                counter=countElementsByCriteria(criteria,0,lista)
+                counter=countElementsByCriteria(criteria,casting,details)
+                print("El director",criteria,"tiene",counter[0],"peliculas buenas con promedio",counter[1])
                 print("Coinciden ",counter," elementos con el crtierio: '", criteria ,"' (en construcción ...)")
+            elif int(inputs[0])==5: #opcion 5
+                criteria =input('Ingrese el id de la peli\n')
+                counter=buscarPeli(criteria,details)
+                print(counter)
+            elif int(inputs[0])==6: #opcion 5
+                criteria =input('Ingrese el id de la peli\n')
+                print(details[1])
             elif int(inputs[0])==0: #opcion 0, salir
                 sys.exit(0)
 
